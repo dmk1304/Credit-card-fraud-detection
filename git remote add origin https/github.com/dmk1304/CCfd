@@ -1,0 +1,81 @@
+import pandas as pd
+import numpy as np
+
+
+data=pd.read_csv('creditcard.csv')
+
+samp=data.sample(frac=0.1, random_state=1)
+
+print(samp.info)
+print(samp.head())
+print(samp.shape)
+
+print(samp.isnull().sum())#  to check Null Values
+
+#histogram
+import matplotlib.pyplot as plt
+
+samp.hist(figsize=(20,20))
+plt.show()
+
+#correlation MAtrix
+import seaborn as sns
+corrmat=samp.corr()
+plt.figsize=(20,20)
+sns.heatmap(corrmat, vmax=0.8, square=True)
+plt.show()
+
+#no. of fraud  and valid casescases 
+
+fraud=samp[samp['Class']==1]
+valid=samp[samp['Class']==0]
+
+print(len(fraud))
+print(len(valid))
+
+#outlier Fraction
+
+outlier = float(len(fraud)/len(valid))
+
+#getting th dataset
+
+X=samp.iloc[:,:30]
+Y=samp.iloc[:,-1]
+
+from sklearn.metrics import classification_report, accuracy_score
+from sklearn.ensemble import IsolationForest
+from sklearn.neighbors import LocalOutlierFactor
+
+state=1
+
+classifier={
+    'IsolationForest':IsolationForest(max_samples=len(X), 
+                                      contamination=outlier,random_state=state),
+    
+    'Local Outlier Factor':LocalOutlierFactor(n_neighbors=20,contamination= outlier)
+    
+}
+
+
+
+for i,(clf_name,clf)in enumerate(classifier.items()):
+    if clf_name=="IsolationForest":
+        clf.fit(X)
+        score_predict=clf.decision_function(X)
+        y_pred=clf.predict(X)
+        
+    else:
+        
+        y_pred=clf.fit_predict(X)
+        scores_pred=clf.negative_outlier_factor_
+        
+    y_pred[y_pred==1]=0 
+    y_pred[y_pred==-1]=1
+
+    n_errors=(y_pred!=Y).sum()
+
+    print('{}:{}'.format(clf_name,n_errors))
+    print(accuracy_score(Y,y_pred))
+    print(classification_report(Y,y_pred))
+
+
